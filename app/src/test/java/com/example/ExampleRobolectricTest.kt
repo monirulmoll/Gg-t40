@@ -79,4 +79,31 @@ class ExampleRobolectricTest {
         assertEquals("CLICK", json.getString("command"))
         assertEquals("Button not found using Accessibility or OpenCV", json.getString("message"))
     }
+
+    @Test
+    fun `chatgpt send button coordinate calculations keyboard open vs closed`() {
+        val screenWidth = 1080
+        val screenHeight = 2400
+
+        val expectedX = Math.round(screenWidth * com.example.service.ChatGptButtonManager.SEND_BUTTON_X_RATIO)
+        val expectedYOpen = Math.round(screenHeight * com.example.service.ChatGptButtonManager.SEND_BUTTON_Y_KEYBOARD_OPEN_RATIO)
+        val expectedYClosed = Math.round(screenHeight * com.example.service.ChatGptButtonManager.SEND_BUTTON_Y_KEYBOARD_CLOSED_RATIO)
+
+        assertEquals(0.910f, com.example.service.ChatGptButtonManager.SEND_BUTTON_X_RATIO, 0.001f)
+        assertEquals(0.573f, com.example.service.ChatGptButtonManager.SEND_BUTTON_Y_KEYBOARD_OPEN_RATIO, 0.001f)
+        assertEquals(0.940f, com.example.service.ChatGptButtonManager.SEND_BUTTON_Y_KEYBOARD_CLOSED_RATIO, 0.001f)
+
+        // Case 1: Keyboard Open
+        assertEquals(983, expectedX)
+        assertEquals(1375, expectedYOpen)
+
+        // Case 2: Keyboard Closed
+        assertEquals(2256, expectedYClosed)
+    }
+
+    @Test
+    fun `send action parsing alias to enter`() {
+        val cmd = BridgeCommand.fromJson("""{"action":"SEND"}""")
+        assertEquals(CommandAction.ENTER, cmd.action)
+    }
 }

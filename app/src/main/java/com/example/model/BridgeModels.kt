@@ -20,7 +20,9 @@ enum class CommandAction {
     companion object {
         fun fromString(str: String?): CommandAction? {
             if (str == null) return null
-            return entries.firstOrNull { it.name.equals(str.trim(), ignoreCase = true) }
+            val trimmed = str.trim()
+            if (trimmed.equals("SEND", ignoreCase = true)) return ENTER
+            return entries.firstOrNull { it.name.equals(trimmed, ignoreCase = true) }
         }
     }
 }
@@ -181,9 +183,17 @@ data class BridgeCommand(
 
             return BridgeCommand(
                 action = action,
-                packageName = if (json.has("package")) json.getString("package") else json.optString("packageName", null),
-                text = json.optString("text", null),
-                target = json.optString("target", json.optString("node", null)),
+                packageName = when {
+                    json.has("package") && !json.isNull("package") -> json.getString("package")
+                    json.has("packageName") && !json.isNull("packageName") -> json.getString("packageName")
+                    else -> null
+                },
+                text = if (json.has("text") && !json.isNull("text")) json.getString("text") else null,
+                target = when {
+                    json.has("target") && !json.isNull("target") -> json.getString("target")
+                    json.has("node") && !json.isNull("node") -> json.getString("node")
+                    else -> null
+                },
                 x = if (json.has("x")) json.getDouble("x").toFloat() else null,
                 y = if (json.has("y")) json.getDouble("y").toFloat() else null,
                 timeoutMs = json.optLong("timeoutMs", 15000L),

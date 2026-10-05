@@ -156,6 +156,11 @@ class BridgeHttpServer(
                 sendHttpResponse(output, 200, result.toJson().toString(2), "application/json")
             }
 
+            path == "/api/send" || path == "/send" -> {
+                val result = commandDispatcher.execute(BridgeCommand(action = CommandAction.ENTER))
+                sendHttpResponse(output, 200, result.toJson().toString(2), "application/json")
+            }
+
             path == "/api/command" || path == "/command" -> {
                 if (method != "POST") {
                     sendHttpError(output, 405, "Method Not Allowed. Use POST.")
