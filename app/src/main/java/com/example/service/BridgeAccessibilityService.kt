@@ -13,6 +13,7 @@ import com.example.model.BridgeResult
 import com.example.model.CodeBlock
 import com.example.util.BridgeClipboard
 import com.example.util.BridgeLogger
+import kotlin.coroutines.resume
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -284,12 +285,8 @@ class BridgeAccessibilityService : AccessibilityService() {
 
         // Check active package: if ChatGPT, run ChatGPT-specific Method 1 -> Method 2
         val activePkg = currentForegroundPackage.value
-        val rootPkg = try { rootInActiveWindow?.packageName?.toString() } catch (_: Exception) { null }
-        val isChatGpt = activePkg == ChatGptButtonManager.CHATGPT_PACKAGE || rootPkg == ChatGptButtonManager.CHATGPT_PACKAGE
-        val buttonTarget = target ?: "Copy"
-        val targetLower = buttonTarget.lowercase().trim()
-
-        if (isChatGpt || targetLower == "send" || targetLower == "submit") {
+        if (activePkg == ChatGptButtonManager.CHATGPT_PACKAGE) {
+            val buttonTarget = target ?: "Copy"
             return ChatGptButtonManager.clickButtonInChatGpt(this, this, buttonTarget)
         }
 
@@ -415,34 +412,25 @@ class BridgeAccessibilityService : AccessibilityService() {
         val path = Path().apply {
             moveTo(x, y)
         }
-        val stroke = GestureDescription.StrokeDescription(path, 0, 80)
-        val gesture = GestureDescription.Builder().addStroke(stroke).build()
+        val gesture = GestureDescription.Builder()
+            .addStroke(GestureDescription.StrokeDescription(path, 0, 100))
+            .build()
 
         var dispatched = false
         val latch = java.util.concurrent.CountDownLatch(1)
-        val handlerThread = android.os.HandlerThread("GestureCallbackThread").apply { start() }
-        val handler = android.os.Handler(handlerThread.looper)
+        dispatchGesture(gesture, object : GestureResultCallback() {
+            override fun onCompleted(gestureDescription: GestureDescription?) {
+                dispatched = true
+                latch.countDown()
+            }
 
-        try {
-            dispatchGesture(gesture, object : GestureResultCallback() {
-                override fun onCompleted(gestureDescription: GestureDescription?) {
-                    dispatched = true
-                    latch.countDown()
-                }
+            override fun onCancelled(gestureDescription: GestureDescription?) {
+                dispatched = false
+                latch.countDown()
+            }
+        }, null)
 
-                override fun onCancelled(gestureDescription: GestureDescription?) {
-                    dispatched = false
-                    latch.countDown()
-                }
-            }, handler)
-
-            latch.await(1200, java.util.concurrent.TimeUnit.MILLISECONDS)
-        } catch (e: Exception) {
-            BridgeLogger.logError("dispatchGesture exception: ${e.message}")
-        } finally {
-            handlerThread.quitSafely()
-        }
-
+        latch.await(1000, java.util.concurrent.TimeUnit.MILLISECONDS)
         return dispatched
     }
 
@@ -523,8 +511,7 @@ class BridgeAccessibilityService : AccessibilityService() {
 
     suspend fun performEnter(): BridgeResult {
         // If current app is ChatGPT, track and click the Send button directly
-        val rootPkg = try { rootInActiveWindow?.packageName?.toString() } catch (_: Exception) { null }
-        if (currentForegroundPackage.value == ChatGptButtonManager.CHATGPT_PACKAGE || rootPkg == ChatGptButtonManager.CHATGPT_PACKAGE) {
+        if (currentForegroundPackage.value == ChatGptButtonManager.CHATGPT_PACKAGE) {
             return ChatGptButtonManager.clickSendButton(this, this)
         }
 
