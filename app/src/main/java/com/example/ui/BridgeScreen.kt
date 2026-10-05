@@ -610,11 +610,27 @@ fun ConsoleTab(
 
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 ActionBtn(
-                    text = "Press Enter / Send",
+                    text = "ChatGPT Click 'Send'",
                     icon = Icons.AutoMirrored.Filled.Send,
                     tint = NeonEmerald,
                     modifier = Modifier.weight(1f)
-                ) { viewModel.pressEnter() }
+                ) { viewModel.clickChatGptButton("Send") }
+
+                ActionBtn(
+                    text = "ChatGPT Click 'Copy'",
+                    icon = Icons.Default.SmartButton,
+                    tint = NeonCyan,
+                    modifier = Modifier.weight(1f)
+                ) { viewModel.clickChatGptButton("Copy") }
+            }
+
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                ActionBtn(
+                    text = "Copy to Clipboard",
+                    icon = Icons.Default.ContentCopy,
+                    tint = TextSecondary,
+                    modifier = Modifier.weight(1f)
+                ) { viewModel.performCopy() }
 
                 ActionBtn(
                     text = "Paste Field",
@@ -622,22 +638,6 @@ fun ConsoleTab(
                     tint = NeonCyan,
                     modifier = Modifier.weight(1f)
                 ) { viewModel.performPaste() }
-            }
-
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                ActionBtn(
-                    text = "ChatGPT Click 'Copy'",
-                    icon = Icons.Default.SmartButton,
-                    tint = NeonEmerald,
-                    modifier = Modifier.weight(1f)
-                ) { viewModel.clickChatGptButton("Copy") }
-
-                ActionBtn(
-                    text = "Copy to Clipboard",
-                    icon = Icons.Default.ContentCopy,
-                    tint = NeonCyan,
-                    modifier = Modifier.weight(1f)
-                ) { viewModel.performCopy() }
             }
 
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {

@@ -508,7 +508,12 @@ class BridgeAccessibilityService : AccessibilityService() {
         return BridgeResult.failed("COPY", "No text could be copied from current screen")
     }
 
-    fun performEnter(): BridgeResult {
+    suspend fun performEnter(): BridgeResult {
+        // If current app is ChatGPT, track and click the Send button directly
+        if (currentForegroundPackage.value == ChatGptButtonManager.CHATGPT_PACKAGE) {
+            return ChatGptButtonManager.clickSendButton(this, this)
+        }
+
         val root = try { rootInActiveWindow } catch (e: Exception) { null }
             ?: return BridgeResult.failed("ENTER", "No active window found")
 

@@ -79,4 +79,13 @@ object OpenCVHelper {
         val sizePx = (targetDpSize * density).toInt().coerceAtLeast(16)
         return drawableToMat(context, R.drawable.ic_chatgpt_copy, sizePx, sizePx)
     }
+
+    /**
+     * Obtains the ChatGPT Send (upward arrow) icon Mat at the device's display density.
+     */
+    fun getChatGptSendTemplateMat(context: Context, targetDpSize: Int = 24): Mat? {
+        val density = context.resources.displayMetrics.density
+        val sizePx = (targetDpSize * density).toInt().coerceAtLeast(16)
+        return drawableToMat(context, R.drawable.ic_chatgpt_send, sizePx, sizePx)
+    }
 }
