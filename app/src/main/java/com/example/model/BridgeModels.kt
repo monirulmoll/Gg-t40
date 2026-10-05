@@ -5,6 +5,7 @@ import org.json.JSONObject
 enum class CommandAction {
     OPEN_APP,
     TAP,
+    CLICK,
     TYPE,
     PASTE,
     COPY,
@@ -38,6 +39,7 @@ enum class LogType {
     ACCESSIBILITY,
     STABILITY,
     CLIPBOARD,
+    OPENCV,
     ERROR
 }
 
@@ -59,6 +61,10 @@ data class BridgeResult(
     val command: String,
     val message: String,
     val code: String = if (success) "SUCCESS" else "FAILED",
+    val method: String? = null,
+    val confidence: Double? = null,
+    val x: Int? = null,
+    val y: Int? = null,
     val data: Any? = null,
     val error: String? = null,
     val timestamp: Long = System.currentTimeMillis()
@@ -66,7 +72,21 @@ data class BridgeResult(
     fun toJson(): JSONObject {
         val json = JSONObject()
         json.put("success", success)
+        if (method != null) {
+            json.put("method", method)
+        }
         json.put("command", command)
+        if (confidence != null) {
+            // Round confidence to 2 decimal places for clean display
+            val rounded = (confidence * 100).toInt() / 100.0
+            json.put("confidence", rounded)
+        }
+        if (x != null) {
+            json.put("x", x)
+        }
+        if (y != null) {
+            json.put("y", y)
+        }
         json.put("code", code)
         json.put("message", message)
         if (data != null) {
@@ -103,6 +123,42 @@ data class BridgeResult(
 
         fun unsupported(command: String, details: String): BridgeResult =
             BridgeResult(success = false, command = command, message = "Operation unsupported: $details", code = "UNSUPPORTED", error = details)
+
+        fun chatGptAccessibilitySuccess(command: String = "CLICK", message: String = "ChatGPT button clicked successfully"): BridgeResult =
+            BridgeResult(
+                success = true,
+                command = command,
+                method = "ACCESSIBILITY",
+                message = message,
+                code = "SUCCESS"
+            )
+
+        fun chatGptOpenCvSuccess(
+            command: String = "CLICK",
+            confidence: Double,
+            x: Int,
+            y: Int,
+            message: String = "ChatGPT button found and clicked using image matching"
+        ): BridgeResult =
+            BridgeResult(
+                success = true,
+                command = command,
+                method = "OPENCV",
+                confidence = confidence,
+                x = x,
+                y = y,
+                message = message,
+                code = "SUCCESS"
+            )
+
+        fun chatGptClickFailed(command: String = "CLICK", message: String = "Button not found using Accessibility or OpenCV"): BridgeResult =
+            BridgeResult(
+                success = false,
+                command = command,
+                message = message,
+                code = "FAILED",
+                error = message
+            )
     }
 }
 

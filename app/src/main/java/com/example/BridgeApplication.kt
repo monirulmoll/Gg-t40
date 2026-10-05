@@ -4,6 +4,7 @@ import android.app.Application
 import com.example.command.CommandDispatcher
 import com.example.server.BridgeHttpServer
 import com.example.util.BridgeLogger
+import com.example.util.OpenCVHelper
 
 class BridgeApplication : Application() {
 
@@ -17,6 +18,9 @@ class BridgeApplication : Application() {
         super.onCreate()
         instance = this
         BridgeLogger.logSystem("Bridge Controller App Initialized")
+
+        // Initialize OpenCV
+        OpenCVHelper.init()
 
         commandDispatcher = CommandDispatcher(this)
         httpServer = BridgeHttpServer(commandDispatcher, port = 8765)

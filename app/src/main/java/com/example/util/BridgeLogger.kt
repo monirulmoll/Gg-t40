@@ -48,6 +48,7 @@ object BridgeLogger {
     fun logAccessibility(message: String, details: String? = null) = log(LogType.ACCESSIBILITY, message, details)
     fun logStability(message: String, details: String? = null) = log(LogType.STABILITY, message, details)
     fun logClipboard(message: String, details: String? = null) = log(LogType.CLIPBOARD, message, details)
+    fun logOpencv(message: String, details: String? = null) = log(LogType.OPENCV, message, details)
     fun logError(message: String, details: String? = null) = log(LogType.ERROR, message, details)
 
     fun clear() {

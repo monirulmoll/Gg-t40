@@ -75,7 +75,7 @@ class CommandDispatcher(private val context: Context) {
         }
 
         return@withContext when (action) {
-            CommandAction.TAP -> {
+            CommandAction.TAP, CommandAction.CLICK -> {
                 service.performTap(command.target, command.x, command.y)
             }
             CommandAction.TYPE -> {

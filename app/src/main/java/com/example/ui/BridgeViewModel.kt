@@ -172,6 +172,10 @@ class BridgeViewModel(application: Application) : AndroidViewModel(application) 
         executeCommand(BridgeCommand(action = CommandAction.COPY))
     }
 
+    fun clickChatGptButton(target: String = "Copy") {
+        executeCommand(BridgeCommand(action = CommandAction.CLICK, target = target, packageName = "com.openai.chatgpt"))
+    }
+
     fun pressBack() {
         executeCommand(BridgeCommand(action = CommandAction.BACK))
     }

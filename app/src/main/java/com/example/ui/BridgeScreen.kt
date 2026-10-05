@@ -626,8 +626,24 @@ fun ConsoleTab(
 
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 ActionBtn(
-                    text = "Read Clipboard",
+                    text = "ChatGPT Click 'Copy'",
+                    icon = Icons.Default.SmartButton,
+                    tint = NeonEmerald,
+                    modifier = Modifier.weight(1f)
+                ) { viewModel.clickChatGptButton("Copy") }
+
+                ActionBtn(
+                    text = "Copy to Clipboard",
                     icon = Icons.Default.ContentCopy,
+                    tint = NeonCyan,
+                    modifier = Modifier.weight(1f)
+                ) { viewModel.performCopy() }
+            }
+
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                ActionBtn(
+                    text = "Read Clipboard",
+                    icon = Icons.Default.Description,
                     tint = NeonCyan,
                     modifier = Modifier.weight(1f)
                 ) { viewModel.readClipboard() }
@@ -868,6 +884,7 @@ fun LogItemView(entry: LogEntry, dateFormat: SimpleDateFormat) {
         LogType.ACCESSIBILITY -> NeonAmber
         LogType.STABILITY -> Color(0xFF38BDF8)
         LogType.CLIPBOARD -> Color(0xFFA855F7)
+        LogType.OPENCV -> Color(0xFFFB923C)
         LogType.ERROR -> NeonRed
     }
 
@@ -1005,9 +1022,28 @@ fun GuideTab() {
 
         Spacer(modifier = Modifier.height(12.dp))
 
+        // Curl example 4 (ChatGPT Button Click with OpenCV Fallback)
+        CodeSnippetCard(
+            title = "4. ChatGPT Button Click (Method 1 & OpenCV Method 2)",
+            code = "# Click 'Copy' button under ChatGPT response:\n" +
+                    "curl -X POST http://127.0.0.1:8765/api/command \\\n" +
+                    "  -H \"Content-Type: application/json\" \\\n" +
+                    "  -d '{\"action\":\"CLICK\",\"target\":\"Copy\"}'\n\n" +
+                    "# Success response (Method 1: Accessibility):\n" +
+                    "# {\"success\":true,\"method\":\"ACCESSIBILITY\",\"command\":\"CLICK\",\"message\":\"ChatGPT button clicked successfully\"}\n\n" +
+                    "# Success response (Method 2: OpenCV >= 85%):\n" +
+                    "# {\"success\":true,\"method\":\"OPENCV\",\"command\":\"CLICK\",\"confidence\":0.91,\"x\":540,\"y\":1820,\"message\":\"...\"}",
+            onCopy = {
+                clipboardManager.setText(AnnotatedString(it))
+                Toast.makeText(context, "Copied curl command", Toast.LENGTH_SHORT).show()
+            }
+        )
+
+        Spacer(modifier = Modifier.height(12.dp))
+
         // Python Agent snippet
         CodeSnippetCard(
-            title = "4. Python Integration for Termux AI Agent",
+            title = "5. Python Integration for Termux AI Agent",
             code = "import requests, time\n\n" +
                     "BRIDGE_URL = 'http://127.0.0.1:8765/api/command'\n\n" +
                     "def send_bridge(action, **kwargs):\n" +

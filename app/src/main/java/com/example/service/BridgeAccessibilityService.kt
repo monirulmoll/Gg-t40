@@ -270,10 +270,27 @@ class BridgeAccessibilityService : AccessibilityService() {
         }
     }
 
-    fun performTap(target: String?, x: Float? = null, y: Float? = null): BridgeResult {
-        val root = try { rootInActiveWindow } catch (e: Exception) { null }
+    suspend fun performTap(target: String?, x: Float? = null, y: Float? = null): BridgeResult {
+        // If coordinate tap is explicitly requested, dispatch directly
+        if (x != null && y != null) {
+            val gestureDispatched = dispatchTapGestureDirect(x, y)
+            return if (gestureDispatched) {
+                BridgeLogger.logCommand("TAP", "Dispatched coordinate tap at ($x, $y)")
+                BridgeResult.success("TAP", "Dispatched tap at ($x, $y)")
+            } else {
+                BridgeResult.failed("TAP", "Failed to dispatch tap gesture at ($x, $y)")
+            }
+        }
 
-        // Strategy 1: Find node by target identifier (text, contentDescription, or viewId)
+        // Check active package: if ChatGPT, run ChatGPT-specific Method 1 -> Method 2
+        val activePkg = currentForegroundPackage.value
+        if (activePkg == ChatGptButtonManager.CHATGPT_PACKAGE) {
+            val buttonTarget = target ?: "Copy"
+            return ChatGptButtonManager.clickButtonInChatGpt(this, this, buttonTarget)
+        }
+
+        // Generic fallback for other apps (Termux, System Settings, etc.)
+        val root = try { rootInActiveWindow } catch (e: Exception) { null }
         if (!target.isNullOrBlank() && root != null) {
             val matchedNode = findNodeByTarget(root, target)
             if (matchedNode != null) {
@@ -285,18 +302,65 @@ class BridgeAccessibilityService : AccessibilityService() {
             }
         }
 
-        // Strategy 2: If coordinates provided, use gesture dispatching
-        if (x != null && y != null) {
-            val gestureDispatched = dispatchTapGesture(x, y)
-            if (gestureDispatched) {
-                BridgeLogger.logCommand("TAP", "Dispatched coordinate tap at ($x, $y)")
-                return BridgeResult.success("TAP", "Dispatched tap at ($x, $y)")
-            } else {
-                return BridgeResult.failed("TAP", "Failed to dispatch tap gesture at ($x, $y)")
-            }
+        return BridgeResult.notFound("TAP", target ?: "Unknown target (no coordinates provided)")
+    }
+
+    suspend fun performChatGptClick(target: String = "Copy"): BridgeResult {
+        return ChatGptButtonManager.clickButtonInChatGpt(this, this, target)
+    }
+
+    fun dispatchTapGestureDirect(x: Float, y: Float): Boolean {
+        return dispatchTapGesture(x, y)
+    }
+
+    /**
+     * Captures a screenshot of the active screen using AccessibilityService API (Android 11+).
+     */
+    suspend fun captureActiveScreenBitmap(): android.graphics.Bitmap? = withContext(Dispatchers.Main) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
+            BridgeLogger.logError("takeScreenshot requires Android 11 (API 30)+")
+            return@withContext null
         }
 
-        return BridgeResult.notFound("TAP", target ?: "Unknown target (no coordinates provided)")
+        val deferred = CompletableDeferred<android.graphics.Bitmap?>()
+        val executor = java.util.concurrent.Executors.newSingleThreadExecutor()
+
+        try {
+            takeScreenshot(
+                android.view.Display.DEFAULT_DISPLAY,
+                executor,
+                object : TakeScreenshotCallback {
+                    override fun onSuccess(screenshotResult: ScreenshotResult) {
+                        try {
+                            val hwBuffer = screenshotResult.hardwareBuffer
+                            val colorSpace = screenshotResult.colorSpace
+                            val hwBitmap = android.graphics.Bitmap.wrapHardwareBuffer(hwBuffer, colorSpace)
+                            val softwareBitmap = hwBitmap?.copy(android.graphics.Bitmap.Config.ARGB_8888, true)
+                            hwBuffer.close()
+                            deferred.complete(softwareBitmap)
+                        } catch (e: Exception) {
+                            BridgeLogger.logError("Failed to convert screenshot buffer: ${e.message}")
+                            deferred.complete(null)
+                        }
+                    }
+
+                    override fun onFailure(errorCode: Int) {
+                        BridgeLogger.logError("Accessibility takeScreenshot failed with code $errorCode")
+                        deferred.complete(null)
+                    }
+                }
+            )
+        } catch (e: Exception) {
+            BridgeLogger.logError("Exception in takeScreenshot: ${e.message}")
+            deferred.complete(null)
+        }
+
+        return@withContext try {
+            withTimeout(4000) { deferred.await() }
+        } catch (e: TimeoutCancellationException) {
+            BridgeLogger.logError("Screenshot capture timed out")
+            null
+        }
     }
 
     private fun findNodeByTarget(node: AccessibilityNodeInfo, target: String): AccessibilityNodeInfo? {
