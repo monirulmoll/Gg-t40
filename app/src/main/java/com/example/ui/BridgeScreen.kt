@@ -163,7 +163,8 @@ fun BridgeScreen(viewModel: BridgeViewModel) {
                 isServerRunning = isServerRunning,
                 fgPkg = currentFgPkg,
                 stabilityState = stabilityState,
-                onEnableAccessibility = { viewModel.openAccessibilitySettings(context) }
+                onEnableAccessibility = { viewModel.openAccessibilitySettings(context) },
+                onOpenAppDetails = { viewModel.openAppDetailsSettings(context) }
             )
 
             // Busy indicator
@@ -263,8 +264,13 @@ fun StatusDashboard(
     isServerRunning: Boolean,
     fgPkg: String,
     stabilityState: StabilityState,
-    onEnableAccessibility: () -> Unit
+    onEnableAccessibility: () -> Unit,
+    onOpenAppDetails: () -> Unit
 ) {
+    val context = LocalContext.current
+    val clipboardManager = LocalClipboardManager.current
+    var showRestrictedHelp by remember { mutableStateOf(false) }
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -278,7 +284,7 @@ fun StatusDashboard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
                     Icon(
                         imageVector = if (isConnected) Icons.Default.CheckCircle else Icons.Default.Warning,
                         contentDescription = "Status",
@@ -295,7 +301,7 @@ fun StatusDashboard(
                             )
                         )
                         Text(
-                            text = if (isConnected) "Window content & gestures ready" else "Must enable in Android settings",
+                            text = if (isConnected) "Window content & gestures ready" else "Disabled or Restricted by Android",
                             style = MaterialTheme.typography.bodySmall,
                             color = TextSecondary,
                             fontSize = 11.sp
@@ -304,14 +310,122 @@ fun StatusDashboard(
                 }
 
                 if (!isConnected) {
-                    Button(
-                        onClick = onEnableAccessibility,
-                        colors = ButtonDefaults.buttonColors(containerColor = NeonRed, contentColor = Color.White),
-                        shape = RoundedCornerShape(8.dp),
-                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
-                        modifier = Modifier.height(32.dp)
-                    ) {
-                        Text("Enable", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Button(
+                            onClick = onEnableAccessibility,
+                            colors = ButtonDefaults.buttonColors(containerColor = NeonRed, contentColor = Color.White),
+                            shape = RoundedCornerShape(8.dp),
+                            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                            modifier = Modifier.height(32.dp)
+                        ) {
+                            Text("Enable", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
+            }
+
+            // Android 13+ Restricted Setting Notice & 1-tap Unblock
+            if (!isConnected) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFF26190B)),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, NeonAmber.copy(alpha = 0.5f)),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Column(modifier = Modifier.padding(10.dp)) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    imageVector = Icons.Default.Lock,
+                                    contentDescription = "Restricted",
+                                    tint = NeonAmber,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    text = "Restricted Setting on Android 13/14/15?",
+                                    style = MaterialTheme.typography.labelSmall.copy(
+                                        fontWeight = FontWeight.Bold,
+                                        color = NeonAmber
+                                    )
+                                )
+                            }
+                            TextButton(
+                                onClick = { showRestrictedHelp = !showRestrictedHelp },
+                                contentPadding = PaddingValues(0.dp),
+                                modifier = Modifier.height(24.dp)
+                            ) {
+                                Text(
+                                    text = if (showRestrictedHelp) "Hide" else "How to Fix",
+                                    fontSize = 11.sp,
+                                    color = NeonAmber
+                                )
+                            }
+                        }
+
+                        Text(
+                            text = "If Android says 'Restricted setting - unavailable':",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = TextPrimary,
+                            fontSize = 11.sp
+                        )
+                        Spacer(modifier = Modifier.height(6.dp))
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Button(
+                                onClick = onOpenAppDetails,
+                                colors = ButtonDefaults.buttonColors(containerColor = NeonAmber, contentColor = CyberNavy),
+                                shape = RoundedCornerShape(6.dp),
+                                modifier = Modifier.weight(1f).height(34.dp),
+                                contentPadding = PaddingValues(horizontal = 6.dp)
+                            ) {
+                                Text("1. Open App Info", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                            }
+                            FilledTonalButton(
+                                onClick = onEnableAccessibility,
+                                shape = RoundedCornerShape(6.dp),
+                                modifier = Modifier.weight(1f).height(34.dp),
+                                contentPadding = PaddingValues(horizontal = 6.dp)
+                            ) {
+                                Text("2. Enable Service", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                            }
+                        }
+
+                        if (showRestrictedHelp) {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            HorizontalDivider(color = NeonAmber.copy(alpha = 0.3f))
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Text(
+                                text = "3-Step Unblock Instructions:\n" +
+                                        "1. Tap '1. Open App Info' above.\n" +
+                                        "2. In App Info, tap the 3 dots (⋮) in the top-right corner.\n" +
+                                        "3. Tap 'Allow restricted settings' and confirm your PIN/Fingerprint.\n" +
+                                        "4. Return here and tap '2. Enable Service' to turn the switch ON.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = TextSecondary,
+                                fontSize = 11.sp,
+                                lineHeight = 16.sp
+                            )
+                            Spacer(modifier = Modifier.height(6.dp))
+                            val adbCmd = "adb shell appops set com.aistudio.bridgecontroller.bxptra ACCESS_RESTRICTED_SETTINGS allow"
+                            AssistChip(
+                                onClick = {
+                                    clipboardManager.setText(AnnotatedString(adbCmd))
+                                    Toast.makeText(context, "Copied ADB command to clipboard", Toast.LENGTH_SHORT).show()
+                                },
+                                label = { Text("Copy ADB Bypass Command", fontSize = 10.sp) },
+                                leadingIcon = { Icon(Icons.Default.Terminal, contentDescription = null, modifier = Modifier.size(14.dp)) },
+                                colors = AssistChipDefaults.assistChipColors(containerColor = CyberSurface)
+                            )
+                        }
                     }
                 }
             }

@@ -120,6 +120,19 @@ class BridgeViewModel(application: Application) : AndroidViewModel(application) 
         }
     }
 
+    fun openAppDetailsSettings(context: Context) {
+        try {
+            val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                data = android.net.Uri.parse("package:${context.packageName}")
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            context.startActivity(intent)
+            BridgeLogger.logSystem("Navigated to App Info for Restricted Settings authorization")
+        } catch (e: Exception) {
+            BridgeLogger.logError("Failed to open app details: ${e.message}")
+        }
+    }
+
     fun testAccessibility(): Boolean {
         val connected = isAccessibilityConnected.value
         val msg = if (connected) "Accessibility Service is ACTIVE and CONNECTED." else "Accessibility Service is NOT CONNECTED. Please enable in Settings."
