@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">Bridge Controller</string>
+    <string name="accessibility_service_name">Bridge Controller Automation Service</string>
+    <string name="accessibility_service_description">Provides an Accessibility-based automation bridge for interacting with target apps, reading screen content, and detecting response stability for local AI agents.</string>
+</resources>

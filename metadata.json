@@ -1,0 +1,6 @@
+{
+  "name": "Bridge Controller",
+  "description": "Accessibility-based Android automation bridge providing screen reading, text stability detection, UI commands, and local AI agent integration.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
